@@ -11,7 +11,7 @@ from googleapiclient.discovery import build
 class GoogleCalendar:
     def __init__(
         self,
-        credentials_path=os.path.join(os.path.dirname(__file__), "my_credentials.json"),
+        credentials_path=os.path.join(os.path.dirname(__file__), "emily_gmail_cred.json"),
     ):
         self.credentials = self.get_credentials(credentials_path)
         self.service = build("calendar", "v3", credentials=self.credentials)
@@ -69,3 +69,5 @@ class GoogleCalendar:
         if not events:
             return "No events found."
         return events
+
+

@@ -1,1 +1,1 @@
-# CalendarGPT
+# CalendarBot

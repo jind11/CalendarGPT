@@ -8,27 +8,66 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.errors import HttpError
 from email.mime.text import MIMEText
 import base64
+import json
+import os
 
 
 class GmailClient:
     def __init__(self):
+        self.credentials = self.get_credentials(credentials_path)
         self.service = self._create_gmail_service()
+
+    def get_credentials(self, credentials_path):
+        creds = None
+        scopes = ['https://www.googleapis.com/auth/gmail.compose']
+        token_path = os.path.join(os.path.dirname(__file__), "token.pickle")
+
+        if os.path.exists(token_path):
+            with open(token_path, "rb") as token:
+                creds = pickle.load(token)
+
+        if not creds or not creds.valid:
+            if creds and creds.expired and creds.refresh_token:
+                creds.refresh(Request())
+            else:
+                if os.path.exists(credentials_path):
+                    try:
+                        creds = InstalledAppFlow.from_client_secrets_file(
+                            credentials_path, scopes
+                        )
+                        creds = creds.run_local_server(port=0)
+                    except FileNotFoundError:
+                        print(f"Error: {credentials_path} not found.")
+
+            with open(token_path, "wb") as token:
+                pickle.dump(creds, token)
+
+        return creds
 
     def _create_gmail_service(self):
         # Authenticate and build the Gmail API client
-        SCOPES = ['https://www.googleapis.com/auth/gmail.compose']
-        flow = InstalledAppFlow.from_client_secrets_file(
-            '/Users/Yuan/Desktop/SchedulePA/desktop_credentials.json', scopes=SCOPES)
-        credentials = flow.run_local_server(port=0)
+        credentials = None
+        token_path = os.path.join(os.path.dirname(__file__), "token.json")
+        if os.path.exists(token_path):
+            with open(token_path, "r") as token:
+                credentials = json.load(token)
 
-        # Save the credentials to a file
-        with open('token.json', 'w') as f:
-            f.write(credentials.to_json())
+        if not credentials or not credentials.valid:
+            SCOPES = ['https://www.googleapis.com/auth/gmail.compose']
+            flow = InstalledAppFlow.from_client_secrets_file(
+                os.path.join(os.path.dirname(__file__), "emily_gmail_cred.json"), scopes=SCOPES)
+            credentials = flow.run_local_server(port=0)
+
+            # Save the credentials to a file
+            with open(os.path.join(os.path.dirname(__file__), "token.json"), 'w') as f:
+                f.write(credentials.to_json())
             
         service = build('gmail', 'v1', credentials=credentials)
         return service
 
-    def send_email(self, to, subject, body):
+    def send_email(self, input):
+        input = json.loads(input)
+        to, subject, body = input['recipient'], input['subject'], input['body']
         try:
             # Create the message
             message = MIMEText(body)
@@ -83,7 +122,9 @@ class GmailClient:
             body = payload['body']['data']
             return base64.urlsafe_b64decode(body).decode()
 
-# TestGmail = GmailClient()
 
-# TestGmail.send_email("bodiyuan@berkeley.edu", "test email 2", "how are you?")
+if __name__ == "__main__":
+    # for testing
+    TestGmail = GmailClient()
+    TestGmail.send_email("""{"recipient": "jindi930617@gmail.com", "subject": "test email 2", "body": "how are you?"}""")
 
