@@ -12,7 +12,7 @@ from langchain.prompts import (
 )
 import os
 
-os.environ["OPENAI_API_KEY"] = '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'
+os.environ["OPENAI_API_KEY"] = ''
 
 
 def create_prompt(
